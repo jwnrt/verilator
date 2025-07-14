@@ -54,7 +54,7 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
 
   if [ "$CI_OS_NAME" = "linux" ]; then
     sudo apt-get update
-    sudo apt-get install libfl-dev libgoogle-perftools-dev ccache
+    sudo apt-get install libfl-dev ccache
     if [ "$CI_RUNS_ON" = "ubuntu-20.04" ]; then
       sudo apt-get install libsystemc libsystemc-dev
     fi

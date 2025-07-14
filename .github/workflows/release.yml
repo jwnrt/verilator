@@ -1,0 +1,61 @@
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        required: true
+        type: string
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  CI_OS_NAME: linux
+  CI_COMMIT: ${{ github.sha }}
+  CI_M32: 0
+
+defaults:
+  run:
+    shell: bash
+    working-directory: repo
+
+jobs:
+
+  build:
+    runs-on: ubuntu-22.04
+    name: Build
+    env:
+      CI_BUILD_STAGE_NAME: build
+      CI_RUNS_ON: ubuntu-22.04
+      CC: gcc
+      CXX: g++
+      VERILATOR_ARCHIVE: verilator-${{ github.sha }}.tar.gz
+
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        path: repo
+
+    - name: Install packages for build
+      run: ./ci/ci-install.bash
+
+    - name: Build
+      run: ./ci/ci-script.bash
+
+    - name: Tar up repository
+      working-directory: ${{ github.workspace }}
+      run: tar --posix -c -z -f ${{ env.VERILATOR_ARCHIVE }} repo
+
+    - name: Upload tar archive
+      uses: actions/upload-artifact@v4
+      with:
+        path: ${{ github.workspace }}/${{ env.VERILATOR_ARCHIVE }}
+        name: ${{ env.VERILATOR_ARCHIVE }}
+
+    - name: Publish release
+      run: |
+        gh release create "${{ inputs.release_tag }}" \
+          --title "${{ inputs.release_tag }}"
+        gh release upload "${{ inputs.release_tag }}" \
+          "${{ github.workspace }}/${{ env.VERILATOR_ARCHIVE }}"
