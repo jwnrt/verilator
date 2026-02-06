@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        type: string
+        optional: false
+
+jobs:
+  build:
+    name: Build
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+      os: ubuntu-22.04
+      cc: clang
+
+  release:
+    name: Release
+    needs: build
+    runs-on: ubuntu-22.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Release
+        run: |
+          # Create the release if it doesn't already exist
+          gh release create "${{ inputs.tag }}" --prerelease || echo "release exists"
+          # Upload the build artifact
+          gh release upload "${{ inputs.tag }}" --clobber "${{ needs.build.archive }}"
