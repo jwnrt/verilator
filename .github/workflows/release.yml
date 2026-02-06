@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        type: string
+        optional: false
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-22.04
+
+    env:
+      ARCHIVE: verilator-${{ inputs.tag }}.tar.gz
+      CC: clang
+      CXX: clang++
+      CI_BUILD_STAGE_NAME: build
+      CI_COMMIT: ${{ github.sha }}
+      CI_OS_NAME: linux
+      CI_RUNS_ON: ubuntu-22.04
+      GH_TOKEN: ${{ github.token }}
+      INSTALL_DIR: "${{ github.workspace }}/dist"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install packages
+        run: ./ci/ci-install.bash
+
+      - name: Build
+        run: ./ci/ci-script.bash
+
+      - name: Install
+        run: make install
+
+      - name: Archive
+        run: tar -czf "${{ env.ARCHIVE }}" "${{ github.workspace }}/dist"
+
+      - name: Release
+        run: |
+          # Create the release if it doesn't already exist
+          gh release create "${{ inputs.tag }}" --prerelease || echo "release exists"
+          # Upload the build artifact
+          gh release upload "${{ inputs.tag }}" --clobber "${{ env.ARCHIVE }}"
